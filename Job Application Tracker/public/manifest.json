@@ -1,0 +1,50 @@
+{
+    "name": "Job Application Tracker",
+    "description": "Track job applications",
+    "version": "2.0",
+    "manifest_version": 3,
+    "permissions": [
+        "storage",
+        "tabs",
+        "scripting"
+    ],
+    "action": {
+        "default_popup": "index.html",
+        "default_title": "Open the popup"
+    },
+    "icons": {
+        "16": "icons/icon-16.png",
+        "32": "icons/icon-32.png",
+        "48": "icons/icon-48.png",
+        "128": "icons/icon-128.png"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://www.linkedin.com/*",
+                "https://www.indeed.com/*",
+                "https://fr.indeed.com/*",
+                "https://www.hellowork.com/fr-fr/*",
+                "https://www.welcometothejungle.com/*",
+                "https://www.apec.fr/*",
+                "https://djinni.co/*",
+                "https://jobs.octopusit.fr/*" 
+            ],
+            "js": ["content.js"]
+        }
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'"
+    },
+    "host_permissions": [
+        "https://www.linkedin.com/*",
+        "https://www.indeed.com/*",
+        "https://fr.indeed.com/*",
+        "https://www.hellowork.com/fr-fr/*",
+        "https://www.welcometothejungle.com/*",
+        "https://www.apec.fr/*",
+        "https://djinni.co/*",
+        "https://jobs.octopusit.fr/*",
+        "https://job-tracker.jerome-baille.fr/*"
+    ]
+}
