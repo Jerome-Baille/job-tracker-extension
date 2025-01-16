@@ -5,13 +5,13 @@ export const login = async (username: string, password: string) => {
     try {
         const response = await axios.post(`${API_ENDPOINTS.auth}/login`, { username, password });
 
-        const { accessToken, refreshToken, accessTokenExpireDate, refreshTokenExpireDate, userId, userIdExpireDate } = response.data;
+        const { accessToken, refreshTokenId, accessTokenExpireDate, refreshTokenExpireDate, userId, userIdExpireDate } = response.data;
 
         // Store tokens in storage
         chrome.storage.sync.set({
             'JT_accessToken': accessToken,
             'JT_accessTokenExpireDate': accessTokenExpireDate,
-            'JT_refreshToken': refreshToken,
+            'JT_refreshTokenId': refreshTokenId,
             'JT_refreshTokenExpireDate': refreshTokenExpireDate,
             'JT_userId': userId,
             'JT_userIdExpireDate': userIdExpireDate
@@ -30,7 +30,7 @@ export const logout = async () => {
         chrome.storage.sync.remove([
             'JT_accessToken',
             'JT_accessTokenExpireDate',
-            'JT_refreshToken',
+            'JT_refreshTokenId',
             'JT_refreshTokenExpireDate',
             'JT_userId',
             'JT_userIdExpireDate'

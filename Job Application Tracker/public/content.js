@@ -3,18 +3,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (window.location.href.indexOf("linkedin.com") > -1) {
         const jobTitle = document.getElementsByClassName('job-details-jobs-unified-top-card__job-title')[0].innerText;
 
-        const companyContainer = document.getElementsByClassName('job-details-jobs-unified-top-card__primary-description-container')[0].innerText;
+        const companyName = document.getElementsByClassName('job-details-jobs-unified-top-card__company-name')[0].innerText;
 
-        // Extract companyName
-        const companyName = companyContainer.split(' · ')[0];
-
-        // Extract companyLocation
-        const locationStartIndex = companyContainer.indexOf(' · ') + 3; // Adding 3 to skip the " · " part
-        let locationEndIndex = companyContainer.indexOf(' Republiée');
-        if (locationEndIndex === -1) {
-            locationEndIndex = companyContainer.indexOf(' il y a ');
-        }
-        const companyLocation = companyContainer.substring(locationStartIndex, locationEndIndex);
+        const companyContainer = document.getElementsByClassName('job-details-jobs-unified-top-card__primary-description-container')[0];
+        const companyLocation = companyContainer.getElementsByTagName('span')[0].innerText;
 
         // Extract jobType
         let jobType = document.querySelector('.job-details-jobs-unified-top-card__job-insight').innerText;
@@ -34,13 +26,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (window.location.href.indexOf("indeed.com") > -1) {
         const jobTitle = document.getElementsByClassName('jobsearch-JobInfoHeader-title')[0].innerText
 
-        const container = document.getElementsByClassName('jobsearch-CompanyInfoWithoutHeaderImage')[0].innerText
+        const container = document.querySelector('[data-testid="jobsearch-CompanyInfoContainer"]').innerText;
         const containerSplitted = container.split('\n');
         const companyName = containerSplitted[0]
 
         let companyLocation;
-        if (containerSplitted[1].toLowerCase().includes('avis')) {
-            companyLocation = containerSplitted[2];
+        if (containerSplitted[2] && (containerSplitted[2].includes('out of 5') || containerSplitted[2].includes('sur 5'))) {
+            companyLocation = containerSplitted[3];
         } else {
             companyLocation = containerSplitted[1];
         }
@@ -94,31 +86,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     // if current URL contains "welcometothejungle.com"
     if (window.location.href.indexOf("welcometothejungle.com") > -1) {
-        const companyNameFull = document.querySelector('h1').innerText;
-        const companyName = companyNameFull.split(' recrute')[0];
+        const div = document.querySelector('div[data-testid="job-metadata-block"]');
+        const companyName = div.querySelector('a span').textContent;
 
-        const jobTitle = companyNameFull.split(' recrute ')[1];
+        const jobTitle = div.querySelector('h2').textContent;
 
-        // Find all anchor (a) elements on the page
-        const links = document.querySelectorAll('a');
 
-        // Search for the link containing "http://maps.google.com/?q="
-        let targetLink;
-        for (const link of links) {
-            if (link.href.includes('http://maps.google.com/?q=')) {
-                targetLink = link.href;
-                break; // Stop searching once the link is found
-            }
-        }
-
-        let companyLocation;
-
-        if (targetLink) {
-            // Extract the part after "q=" and before ","
-            const startIndex = targetLink.indexOf('q=') + 2; // Adding 2 to skip "q="
-            const endIndex = targetLink.indexOf(',', startIndex);
-            companyLocation = targetLink.substring(startIndex, endIndex);
-        }
+        const iElement = document.querySelector('i[name="location"]');
+        const companyLocationFull = iElement.nextElementSibling;
+        const companyLocation = companyLocationFull.textContent;
 
         var jobType = '';
 
@@ -136,7 +112,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                     if (spanContent.indexOf('total') > -1) {
                         jobType = 'Remote'
-                    } else if ((rawType.indexOf('partiel') > -1) || (rawType.indexOf('ponctuel') > -1)) {
+                    } else if ((spanContent.indexOf('partiel') > -1) || (spanContent.indexOf('ponctuel') > -1) || (spanContent.indexOf('occasionnel') > -1) || (spanContent.indexOf('régulier') > -1) || (spanContent.indexOf('fréquent') > -1)) {
                         jobType = 'Hybrid'
                     } else {
                         jobType = 'On site'

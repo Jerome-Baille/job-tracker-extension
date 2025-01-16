@@ -14,6 +14,6 @@ export const formatDateForDisplay = (date: string) => {
 }
 
 export const formatDateForISO = (date: string) => {
-    const dateTime = DateTime.fromFormat(date, 'dd/MM/yyyy');
+    const dateTime = DateTime.fromFormat(date, 'dd/MM/yyyy').plus({ days: 1 });
     return dateTime.toISO();
 }

@@ -23,7 +23,7 @@ export interface TableProps {
 export interface StorageKeys {
     JT_accessToken: string;
     JT_accessTokenExpireDate: string;
-    JT_refreshToken: string;
+    JT_refreshTokenId: string;
     JT_refreshTokenExpireDate: string;
     userId?: string;
     userIdExpireDate?: string;
