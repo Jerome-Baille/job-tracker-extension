@@ -33,7 +33,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const companyName = containerSplitted[0]
 
         let companyLocationElement = document.querySelector('[data-testid="inlineHeader-companyLocation"]');
-        let companyLocation = companyLocationElement ? companyLocationElement.innerText : '';
+        let companyLocation = companyLocationElement ? companyLocationElement.innerText : 'Non spécifié';
 
         var jobType = '';
 
