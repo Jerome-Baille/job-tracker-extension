@@ -1,6 +1,8 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    const url = window.location.href;
+
     // if current URL contains "linkedin"
-    if (window.location.href.indexOf("linkedin.com") > -1) {
+    if (url.indexOf("linkedin.com") > -1) {
         const jobTitle = document.getElementsByClassName('job-details-jobs-unified-top-card__job-title')[0].innerText;
 
         const companyName = document.getElementsByClassName('job-details-jobs-unified-top-card__company-name')[0].innerText;
@@ -23,19 +25,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // if current URL contains "indeed.com"
-    if (window.location.href.indexOf("indeed.com") > -1) {
+    else if (url.indexOf("indeed.com") > -1) {
         const jobTitle = document.getElementsByClassName('jobsearch-JobInfoHeader-title')[0].innerText
 
         const container = document.querySelector('[data-testid="jobsearch-CompanyInfoContainer"]').innerText;
         const containerSplitted = container.split('\n');
         const companyName = containerSplitted[0]
 
-        let companyLocation;
-        if (containerSplitted[2] && (containerSplitted[2].includes('out of 5') || containerSplitted[2].includes('sur 5'))) {
-            companyLocation = containerSplitted[3];
-        } else {
-            companyLocation = containerSplitted[1];
-        }
+        let companyLocationElement = document.querySelector('[data-testid="inlineHeader-companyLocation"]');
+        let companyLocation = companyLocationElement ? companyLocationElement.innerText : '';
 
         var jobType = '';
 
@@ -56,7 +54,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // if current URL contains "hellowork.com"
-    if (window.location.href.indexOf("hellowork") > -1) {
+    else if (url.indexOf("hellowork") > -1) {
         // Find the element with the attribute "data-cy='jobTitle'"
         const jobTitleElement = document.querySelector("[data-cy='jobTitle']");
         const jobTitle = jobTitleElement ? jobTitleElement.innerText : "";
@@ -85,7 +83,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // if current URL contains "welcometothejungle.com"
-    if (window.location.href.indexOf("welcometothejungle.com") > -1) {
+    else if (url.indexOf("welcometothejungle.com") > -1) {
         const div = document.querySelector('div[data-testid="job-metadata-block"]');
         const companyName = div.querySelector('a span').textContent;
 
@@ -125,7 +123,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // if current URL contains "apec.fr"
-    if (window.location.href.indexOf("apec.fr") > -1) {
+    else if (url.indexOf("apec.fr") > -1) {
         const nameWrapper = document.getElementsByClassName('nav-back__title');
         const jobTitle = nameWrapper[0].querySelector('h1').textContent;
 
@@ -158,7 +156,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // if current URL contains "djinni"
-    if (window.location.href.indexOf("djinni.co") > -1) {
+    else if (url.indexOf("djinni.co") > -1) {
         const nameWrapper = document.querySelector('.detail--title-wrapper');
         const jobTitle = nameWrapper.querySelector('h1').textContent;
 
@@ -172,7 +170,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // if current URL contains "weworkremotely"
-    if (window.location.href.indexOf("weworkremotely.com") > -1) {
+    else if (url.indexOf("weworkremotely.com") > -1) {
         const nameWrapper = document.getElementsByClassName('listing-header-container');
         const jobTitle = nameWrapper[0].querySelector('h1').textContent;
 
@@ -185,7 +183,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Get the reference to the i tag with the class "fas fa-map-marker-alt"
         const icon = document.querySelector('i.fas.fa-map-marker-alt');
 
-        // Check if the icon exists and retrieve the associated h3 text
+        // Check else if the icon exists and retrieve the associated h3 text
         let companyLocation = '';
         if (icon) {
             const h3Tag = icon.parentElement; // Get the reference to the parent element of the icon
@@ -198,7 +196,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // if current URL contains "justjoin.it"
-    if (window.location.href.indexOf("justjoin.it") > -1) {
+    else if (url.indexOf("justjoin.it") > -1) {
         const jobTitle = document.getElementsByClassName('css-1id4k1')[0].innerText;
 
         const companyName = document.getElementsByClassName('css-l4opor')[0].innerText;
@@ -223,7 +221,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // if current URL contains "octopusit.fr"
-    if (window.location.href.indexOf("octopusit.fr") > -1) {
+    else if (url.indexOf("octopusit.fr") > -1) {
         const headerContainer = document.getElementsByClassName('font-company-header')[0].innerText;
         const arr = headerContainer.split(" | ");
         const jobTitle = arr[0];
@@ -249,4 +247,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType })
     }
+
+    else {
+        sendResponse(null);
+    } 
+
+    return true;
 });
