@@ -26,31 +26,43 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     // if current URL contains "indeed.com"
     else if (url.indexOf("indeed.com") > -1) {
-        const jobTitle = document.getElementsByClassName('jobsearch-JobInfoHeader-title')[0].innerText
+        const jobTitle = document.querySelector('[data-testid="simpler-jobTitle"]')?.innerText ?? 'Job Title Not Found';
+        const companyName = document.querySelector('.jobsearch-JobInfoHeader-companyNameLink')?.innerText ??
+            document.querySelector('.jobsearch-JobInfoHeader-companyNameSimple')?.innerText ??
+            'Company Name Not Found';
 
-        const container = document.querySelector('[data-testid="jobsearch-CompanyInfoContainer"]').innerText;
-        const containerSplitted = container.split('\n');
-        const companyName = containerSplitted[0]
+        let companyLocation = 'Non spécifié';
+        let jobType = 'On Site';
+        let jobText = '';
 
-        let companyLocationElement = document.querySelector('[data-testid="inlineHeader-companyLocation"]');
-        let companyLocation = companyLocationElement ? companyLocationElement.innerText : 'Non spécifié';
-
-        var jobType = '';
-
-        // search if "Télétravail" is present in containerSplitted
-        for (var i = 0; i < containerSplitted.length; i++) {
-            if (containerSplitted[i].indexOf('Télétravail') > -1) {
-                if (containerSplitted[i].indexOf('hybride') > -1) {
-                    jobType = "Hybride"
+        const container = document.querySelector('[data-testid="jobsearch-JobInfoHeader-companyLocation"]');
+        if (container) {
+            const div = container.querySelector('div');
+            if (div) {
+                const children = Array.from(div.childNodes);
+                const sepIndex = children.findIndex(n =>
+                    n.nodeType === Node.ELEMENT_NODE && n.getAttribute('role') === 'separator'
+                );
+                if (sepIndex > -1) {
+                    companyLocation = children.slice(0, sepIndex)
+                        .map(n => n.textContent.trim())
+                        .filter(Boolean)
+                        .join(" ");
+                    jobText = children.slice(sepIndex + 1)
+                        .map(n => n.textContent.trim())
+                        .filter(Boolean)
+                        .join(" ");
                 } else {
-                    jobType = "Remote"
+                    companyLocation = div.textContent.trim();
                 }
-            } else {
-                jobType = "On Site"
             }
         }
 
-        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType })
+        jobType = jobText.includes("Télétravail partiel") ? "Hybride" :
+            jobText.includes("Télétravail") ? "Remote" :
+                "On Site";
+
+        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType });
     }
 
     // if current URL contains "hellowork.com"
@@ -250,7 +262,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     else {
         sendResponse(null);
-    } 
+    }
 
     return true;
 });
