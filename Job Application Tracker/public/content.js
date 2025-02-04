@@ -26,35 +26,46 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     // if current URL contains "indeed.com"
     else if (url.indexOf("indeed.com") > -1) {
-        const jobTitle = document.querySelector('[data-testid="simpler-jobTitle"]')?.innerText ?? 'Job Title Not Found';
+        const jobTitle = document.querySelector('[data-testid="simpler-jobTitle"]')?.innerText ??
+            document.querySelector('[data-testid="jobsearch-JobInfoHeader-title"]')?.innerText ??
+            'Job Title Not Found';
         const companyName = document.querySelector('.jobsearch-JobInfoHeader-companyNameLink')?.innerText ??
             document.querySelector('.jobsearch-JobInfoHeader-companyNameSimple')?.innerText ??
+            document.querySelector('[data-testid="inlineHeader-companyName"]')?.innerText ??
             'Company Name Not Found';
 
         let companyLocation = 'Non spécifié';
         let jobType = 'On Site';
         let jobText = '';
 
-        const container = document.querySelector('[data-testid="jobsearch-JobInfoHeader-companyLocation"]');
-        if (container) {
-            const div = container.querySelector('div');
-            if (div) {
-                const children = Array.from(div.childNodes);
-                const sepIndex = children.findIndex(n =>
-                    n.nodeType === Node.ELEMENT_NODE && n.getAttribute('role') === 'separator'
-                );
-                if (sepIndex > -1) {
-                    companyLocation = children.slice(0, sepIndex)
-                        .map(n => n.textContent.trim())
-                        .filter(Boolean)
-                        .join(" ");
-                    jobText = children.slice(sepIndex + 1)
-                        .map(n => n.textContent.trim())
-                        .filter(Boolean)
-                        .join(" ");
-                } else {
-                    companyLocation = div.textContent.trim();
+        const inlineCompanyLocation = document.querySelector('[data-testid="inlineHeader-companyLocation"]')?.innerText;
+
+        if (inlineCompanyLocation) {
+            companyLocation = inlineCompanyLocation;
+        } else {
+            const container = document.querySelector('[data-testid="jobsearch-JobInfoHeader-companyLocation"]');
+            if (container) {
+                const div = container.querySelector('div');
+                if (div) {
+                    const children = Array.from(div.childNodes);
+                    const sepIndex = children.findIndex(n =>
+                        n.nodeType === Node.ELEMENT_NODE && n.getAttribute('role') === 'separator'
+                    );
+                    if (sepIndex > -1) {
+                        companyLocation = children.slice(0, sepIndex)
+                            .map(n => n.textContent.trim())
+                            .filter(Boolean)
+                            .join(" ");
+                        jobText = children.slice(sepIndex + 1)
+                            .map(n => n.textContent.trim())
+                            .filter(Boolean)
+                            .join(" ");
+                    } else {
+                        companyLocation = div.textContent.trim();
+                    }
                 }
+            } else {
+                jobText = 'Télétravail';
             }
         }
 
