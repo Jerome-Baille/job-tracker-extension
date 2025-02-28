@@ -5,7 +5,8 @@ export const login = async (username: string, password: string) => {
     try {
         const response = await axios.post(`${API_ENDPOINTS.auth}/login`, { username, password });
 
-        const { accessToken, refreshTokenId, accessTokenExpireDate, refreshTokenExpireDate, userId, userIdExpireDate } = response.data;
+        const { user, tokens } = response.data;
+        const { accessToken, refreshTokenId, accessTokenExpireDate, refreshTokenExpireDate, fingerprint } = tokens;
 
         // Store tokens in storage
         chrome.storage.sync.set({
@@ -13,8 +14,9 @@ export const login = async (username: string, password: string) => {
             'JT_accessTokenExpireDate': accessTokenExpireDate,
             'JT_refreshTokenId': refreshTokenId,
             'JT_refreshTokenExpireDate': refreshTokenExpireDate,
-            'JT_userId': userId,
-            'JT_userIdExpireDate': userIdExpireDate
+            'JT_userId': user.id,
+            'JT_userRoles': user.roles,
+            'JT_fingerprint': fingerprint
         });
 
         return response.data;
@@ -33,7 +35,8 @@ export const logout = async () => {
             'JT_refreshTokenId',
             'JT_refreshTokenExpireDate',
             'JT_userId',
-            'JT_userIdExpireDate'
+            'JT_userRoles',
+            'JT_fingerprint'
         ]);
         
     } catch (error) {

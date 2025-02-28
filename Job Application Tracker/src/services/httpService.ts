@@ -15,29 +15,22 @@ instance.interceptors.request.use(async (config) => {
     // Show loader
     store.dispatch(showLoader());
 
-    // Get tokens from storage
-    const { JT_accessToken, JT_refreshTokenId } = await new Promise<StorageKeys>((resolve) => {
-        chrome.storage.sync.get(['JT_accessToken', 'JT_refreshTokenId'], function (result) {
+    // Get only the access token from storage since we don't need refresh token here
+    const { JT_accessToken } = await new Promise<StorageKeys>((resolve) => {
+        chrome.storage.sync.get(['JT_accessToken'], function (result) {
             console.log('Tokens retrieved from storage:', result);
             resolve(result as StorageKeys);
         });
     });
 
-    // If refresh token is missing, logout the user
-    if (!JT_refreshTokenId) {
-        console.log('Refresh token is missing');
-        store.dispatch(setUserAuthenticated(false));
-        logout();
-
-        // Hide loader
-        store.dispatch(hideLoader());
-
-        throw new Error('Refresh token is missing');
+    // If access token exists, add it to the request headers
+    if (JT_accessToken) {
+        config.headers.Authorization = `Bearer ${JT_accessToken}`;
+        console.log('Authorization header set:', config.headers.Authorization);
+    } else {
+        console.log('No access token available, proceeding without authentication');
     }
-
-    // Set token in headers
-    config.headers.Authorization = `Bearer ${JT_accessToken}`;
-    console.log('Authorization header set:', config.headers.Authorization);
+    
     return config;
 }, (error) => {
     console.log('Request interceptor error:', error);
