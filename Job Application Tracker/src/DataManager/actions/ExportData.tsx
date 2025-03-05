@@ -20,10 +20,10 @@ export const ExportData = ({ data, setData, isEmpty }: JobDataProps) => {
                 type: 'success',
                 message: 'Data exported successfully'
             });
-        } catch (error) {
+        } catch (error: any) {
             showToast({
                 type: 'error',
-                message: 'Error exporting data'
+                message: error.message || 'Error exporting data'
             });
         }
     }
