@@ -36,3 +36,29 @@
     color: red;
     text-align: center;
 }
+
+.error-text {
+    color: #d9534f;
+    text-align: center;
+    margin: 10px 0;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    width: 100%;
+}
+
+.button-group button {
+    flex: 1;
+}
+
+.button-group button[type="button"] {
+    background-color: #6c757d;
+}
+
+.button-group button[type="button"]:hover {
+    background-color: #5a6268;
+    border-color: #5a6268;
+}

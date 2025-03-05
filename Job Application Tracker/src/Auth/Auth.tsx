@@ -6,7 +6,7 @@ function Auth() {
   const [isLogin, setIsLogin] = useState(true);
 
   return (
-    <>
+    <div className="auth-container">
       {isLogin ? <LoginForm /> : <RegisterForm />}
 
       <span>
@@ -15,7 +15,7 @@ function Auth() {
           {isLogin ? 'Register' : 'Login'}
         </a>
       </span>
-    </>
+    </div>
   );
 }
 
