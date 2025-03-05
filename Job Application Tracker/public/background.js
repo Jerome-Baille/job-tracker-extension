@@ -14,8 +14,6 @@ chrome.runtime.onConnect.addListener(port => {
 
 chrome.tabs.onActivated.addListener(activeInfo => {
     chrome.tabs.get(activeInfo.tabId, tab => {
-        console.log('Active tab changed to:', tab.url);
-
         const supportedWebsites = ["linkedin.com", "indeed.com", "hellowork", "welcometothejungle.com", "apec.fr", "djinni.co", "weworkremotely.com"];
         const isSupported = supportedWebsites.some(site => tab.url.includes(site));
 

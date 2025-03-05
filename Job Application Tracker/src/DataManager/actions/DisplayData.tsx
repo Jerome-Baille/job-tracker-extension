@@ -6,7 +6,6 @@ export const DisplayData = ({ setData, isEmpty }: JobDataProps) => {
 
     const handleClick = async () => {
         if(!isEmpty) {
-            console.log("Data already fetched");
             return;
         }
 

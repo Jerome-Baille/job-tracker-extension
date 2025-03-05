@@ -23,7 +23,7 @@ export const ExportData = ({ data, setData, isEmpty }: JobDataProps) => {
         } catch (error: any) {
             showToast({
                 type: 'error',
-                message: error.message || 'Error exporting data'
+                message: error.response.data.message || 'Error exporting data'
             });
         }
     }
