@@ -8,7 +8,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const companyName = document.getElementsByClassName('job-details-jobs-unified-top-card__company-name')[0].innerText;
 
         const companyContainer = document.getElementsByClassName('job-details-jobs-unified-top-card__primary-description-container')[0];
-        const companyLocation = companyContainer.getElementsByTagName('span')[0].innerText;
+        // Modified: Get the first span in a span in a div in companyContainer
+        let companyLocation = '';
+        const innerDiv = companyContainer.querySelector('div');
+        if (innerDiv) {
+            const innerSpan = innerDiv.querySelector('span');
+            if (innerSpan) {
+                const firstSpan = innerSpan.querySelector('span');
+                if (firstSpan) {
+                    companyLocation = firstSpan.innerText;
+                }
+            }
+        }
 
         // Extract jobType
         let jobType = document.querySelector('.job-details-jobs-unified-top-card__job-insight').innerText;
