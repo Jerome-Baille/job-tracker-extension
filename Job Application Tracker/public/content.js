@@ -1,38 +1,79 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    const url = window.location.href;
+    try {
+        const url = window.location.href;
+
+        // Global helpers: safe queries and accent-insensitive normalization
+        const getText = (selector, ctx = document, fallback = '') => {
+            const el = ctx.querySelector(selector);
+            return el ? el.textContent.trim() : fallback;
+        };
+
+        const getByClassList = (classList, fallback = '') => {
+            const selector = '.' + classList.trim().split(/\s+/).join('.');
+            return getText(selector, document, fallback);
+        };
+
+        const normalize = s => (s || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s+/g, ' ').trim();
 
     // if current URL contains "linkedin"
     if (url.indexOf("linkedin.com") > -1) {
-        const jobTitle = document.getElementsByClassName('job-details-jobs-unified-top-card__job-title')[0].innerText;
+        // Prefer extracting core details from the <main> element
+        const mainEl = document.querySelector('main');
 
-        const companyName = document.getElementsByClassName('job-details-jobs-unified-top-card__company-name')[0].innerText;
+        let jobTitle = 'Job Title Not Found';
+        let companyName = 'Company Name Not Found';
+        let companyLocation = 'Location Not Found';
+        let jobType = 'On site';
 
-        const companyContainer = document.getElementsByClassName('job-details-jobs-unified-top-card__primary-description-container')[0];
-        // Modified: Get the first span in a span in a div in companyContainer
-        let companyLocation = '';
-        const innerDiv = companyContainer.querySelector('div');
-        if (innerDiv) {
-            const innerSpan = innerDiv.querySelector('span');
-            if (innerSpan) {
-                const firstSpan = innerSpan.querySelector('span');
-                if (firstSpan) {
-                    companyLocation = firstSpan.innerText;
+        if (mainEl) {
+            const ps = Array.from(mainEl.querySelectorAll('p'));
+
+            // The user requested: jobTitle = content of second p
+            if (ps.length >= 2) {
+                jobTitle = (ps[1].textContent || '').trim() || jobTitle;
+            }
+
+            // companyName = content of first p
+            if (ps.length >= 1) {
+                companyName = (ps[0].textContent || '').trim() || companyName;
+            }
+
+            // companyLocation = first span inside third p
+            if (ps.length >= 3) {
+                const span = ps[2].querySelector('span');
+                if (span) companyLocation = (span.textContent || '').trim() || companyLocation;
+            }
+
+            // For jobType, find the first DIV inside <main> that contains buttons
+            // and check the text of each button for remote/hybrid keywords.
+            const divs = Array.from(mainEl.querySelectorAll('div'));
+            let buttonContainer = null;
+            for (const d of divs) {
+                if (d.querySelector && d.querySelector('button')) {
+                    buttonContainer = d;
+                    break;
+                }
+            }
+
+            if (buttonContainer) {
+                const btns = Array.from(buttonContainer.querySelectorAll('button'));
+                // Prioritise remote, then hybrid. If none matched, keep On site.
+                for (const b of btns) {
+                    const text = normalize(b.textContent || '');
+                    if (!text) continue;
+                    if (text.includes('a distance') || text.includes('teletravail') || text.includes('remote')) {
+                        jobType = 'Remote';
+                        break;
+                    }
+                    if (text.includes('hybride') || text.includes('hybrid')) {
+                        jobType = 'Hybrid';
+                        // don't break immediately; prioritize remote over hybrid if found in another button
+                    }
                 }
             }
         }
 
-        // Extract jobType
-        let jobType = document.querySelector('.job-details-jobs-unified-top-card__job-insight').innerText;
-
-        if (!jobType || jobType.toLowerCase().includes('à distance')) {
-            jobType = 'Remote';
-        } else if (jobType.toLowerCase().includes('hybride')) {
-            jobType = 'Hybrid';
-        } else {
-            jobType = 'On site';
-        }
-
-        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType })
+        sendResponse({ name: jobTitle, company: companyName, location: companyLocation || 'Location Not Found', type: jobType });
     }
 
     // if current URL contains "indeed.com"
@@ -89,156 +130,170 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     // if current URL contains "hellowork.com"
     else if (url.indexOf("hellowork") > -1) {
-        // Find the element with the attribute "data-cy='jobTitle'"
-        const jobTitleElement = document.querySelector("[data-cy='jobTitle']");
-        const jobTitle = jobTitleElement ? jobTitleElement.innerText : "";
+        // Find the h1 with id "main-content"
+        const h1 = document.querySelector('h1#main-content');
 
-        // Find the div it's inside
-        const parentDiv = jobTitleElement ? jobTitleElement.closest('div') : null;
+        // Default values - declare outside the if block so they're accessible to sendResponse
+        let jobTitle = '';
+        let companyName = '';
+        let companyLocation = '';
+        let jobType = 'On site';
 
-        // Initialize an empty array to store the text from each child element
-        const childTexts = [];
+        if (h1) {
+            // The first span inside h1 is jobTitle, the second is companyName
+            const spans = h1.getElementsByTagName('span');
+            if (spans && spans.length >= 1) {
+                jobTitle = spans[0].innerText.trim();
+            }
+            if (spans && spans.length >= 2) {
+                companyName = spans[1].innerText.trim();
+            }
 
-        // If parentDiv is not null, get the text from each child element
-        if (parentDiv) {
-            const spanElements = parentDiv.getElementsByTagName('span');
+            // Find the section (closest section ancestor) and try to locate the UL that
+            // is a direct sibling of the div that contains the h1. Many pages put the
+            // job meta list as a sibling, so walking siblings is more reliable than
+            // querying the first UL in a higher-level section.
+            const section = h1.closest('section');
 
-            // Get text from span elements
-            for (let i = 0; i < spanElements.length; i++) {
-                childTexts.push(spanElements[i].innerText);
+            // use top-level `normalize` helper for accent-insensitive matching
+
+            // Try to find a UL by looking at the H1 container's siblings first
+            let ul = null;
+            const h1ContainerDiv = h1.closest('div') || h1.parentElement;
+            if (h1ContainerDiv) {
+                let sib = h1ContainerDiv.nextElementSibling;
+                while (sib) {
+                    if (sib.tagName && sib.tagName.toLowerCase() === 'ul') {
+                        ul = sib;
+                        break;
+                    }
+                    // Sometimes ULs are wrapped in a div sibling
+                    const found = sib.querySelector && sib.querySelector('ul');
+                    if (found) {
+                        ul = found;
+                        break;
+                    }
+                    sib = sib.nextElementSibling;
+                }
+            }
+
+            // Fallback: if we didn't find a sibling UL, query the section (if any)
+            if (!ul && section) {
+                ul = section.querySelector('ul');
+            }
+
+            // As a last resort, search the document for any UL that contains 'teletravail'
+            if (!ul) {
+                const possible = Array.from(document.querySelectorAll('ul'));
+                ul = possible.find(u => Array.from(u.querySelectorAll('li')).some(li => normalize(li.textContent).includes('teletravail')));
+            }
+
+            if (ul) {
+                const lis = Array.from(ul.querySelectorAll('li'));
+                if (lis.length >= 1 && !companyLocation) {
+                    companyLocation = lis[0].textContent.trim();
+                }
+
+                // Look for any li mentioning teletravail (accent-insensitive)
+                const teleworkingLi = lis.find(li => normalize(li.textContent).includes('teletravail'));
+                if (teleworkingLi) {
+                    const t = normalize(teleworkingLi.textContent);
+                    if (t.includes('partiel') || t.includes('occasionnel') || t.includes('ponctuel') || t.includes('hybride') || t.includes('mixte')) {
+                        jobType = 'Hybrid';
+                    } else if (t.includes('complet') || t.includes('total') || t.includes('full')) {
+                        jobType = 'Remote';
+                    } else {
+                        // If only 'teletravail' mentioned without modifier, assume Remote
+                        jobType = 'Remote';
+                    }
+                }
             }
         }
 
-        const companyName = childTexts[1];
-        const companyLocation = childTexts[2];
-        const jobType = "On site";
+        // Ensure we have non-empty values before sending response
+        if (!jobTitle) jobTitle = 'Job Title Not Found';
+        if (!companyName) companyName = 'Company Name Not Found';
+        if (!companyLocation) companyLocation = 'Location Not Found';
+        if (!jobType) jobType = 'On site';
 
         sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType })
     }
 
     // if current URL contains "welcometothejungle.com"
     else if (url.indexOf("welcometothejungle.com") > -1) {
-        const div = document.querySelector('div[data-testid="job-metadata-block"]');
-        const companyName = div.querySelector('a span').textContent;
+        const companyName = getText('div[data-testid="job-metadata-block"] a span', document, 'Company Name Not Found');
+        const jobTitle = getText('div[data-testid="job-metadata-block"] h2', document, 'Job Title Not Found');
 
-        const jobTitle = div.querySelector('h2').textContent;
+        const companyLocation = getText('i[name="location"] + *', document, '');
 
+        let jobType = '';
 
-        const iElement = document.querySelector('i[name="location"]');
-        const companyLocationFull = iElement.nextElementSibling;
-        const companyLocation = companyLocationFull.textContent;
-
-        var jobType = '';
-
-        // Using querySelector to find the i element with the name "remote"
+        // Using querySelector to find the i element with the name "remote" and read nearby span
         const remoteIcon = document.querySelector('i[name="remote"]');
-
         if (remoteIcon) {
             const parentDiv = remoteIcon.closest('div');
-
-            if (parentDiv) {
-                const spanElement = parentDiv.querySelector('span');
-
-                if (spanElement) {
-                    const spanContent = spanElement.textContent;
-
-                    if (spanContent.indexOf('total') > -1) {
-                        jobType = 'Remote'
-                    } else if ((spanContent.indexOf('partiel') > -1) || (spanContent.indexOf('ponctuel') > -1) || (spanContent.indexOf('occasionnel') > -1) || (spanContent.indexOf('régulier') > -1) || (spanContent.indexOf('fréquent') > -1)) {
-                        jobType = 'Hybrid'
-                    } else {
-                        jobType = 'On site'
-                    }
-                }
+            const spanElement = parentDiv ? parentDiv.querySelector('span') : null;
+            const spanContent = spanElement ? spanElement.textContent : '';
+            if (spanContent.indexOf('total') > -1) {
+                jobType = 'Remote';
+            } else if ((spanContent.indexOf('partiel') > -1) || (spanContent.indexOf('ponctuel') > -1) || (spanContent.indexOf('occasionnel') > -1) || (spanContent.indexOf('régulier') > -1) || (spanContent.indexOf('fréquent') > -1)) {
+                jobType = 'Hybrid';
+            } else {
+                jobType = 'On site';
             }
         }
 
-        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType })
+        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType });
     }
 
     // if current URL contains "apec.fr"
     else if (url.indexOf("apec.fr") > -1) {
-        const nameWrapper = document.getElementsByClassName('nav-back__title');
-        const jobTitle = nameWrapper[0].querySelector('h1').textContent;
+        const jobTitle = getText('.nav-back__title h1', document, 'Job Title Not Found');
+        const companyName = getText('ul.details-offer-list li', document, 'Company Name Not Found');
+        const companyLocation = getText('ul.details-offer-list.mb-20 li:last-child', document, 'Location Not Found');
 
-        let companyName;
+        const jobType = 'Hybrid';
 
-        // Using querySelector to find the ul with the class "details-offer-list"
-        const ulElement = document.querySelector('ul.details-offer-list');
-
-        if (ulElement) {
-            const firstLiElement = ulElement.querySelector('li');
-
-            if (firstLiElement) {
-                companyName = firstLiElement.textContent;
-            }
-        }
-
-        // Find the ul tag with class "details-offer-list mb-20"
-        const locationUl = document.querySelector('ul.details-offer-list.mb-20');
-
-        // Find the last li tag inside the ul
-        const locationLi = locationUl.querySelectorAll('li');
-        const lastLiElement = locationLi[locationLi.length - 1];
-
-        // Get the content of the last li tag
-        const companyLocation = lastLiElement.textContent;
-
-        const jobType = 'Hybrid'
-
-        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType })
+        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType });
     }
 
     // if current URL contains "djinni"
     else if (url.indexOf("djinni.co") > -1) {
-        const nameWrapper = document.querySelector('.detail--title-wrapper');
-        const jobTitle = nameWrapper.querySelector('h1').textContent;
+        const jobTitle = getText('.detail--title-wrapper h1', document, 'Job Title Not Found');
+        const companyName = getByClassList('job-details--title', 'Company Name Not Found');
+        const companyLocation = getByClassList('location-text', 'Location Not Found');
 
-        const companyName = document.getElementsByClassName('job-details--title')[0].innerText
+        const jobType = 'Remote';
 
-        const companyLocation = document.getElementsByClassName('location-text')[0].innerText
-
-        const jobType = 'Remote'
-
-        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType })
+        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType });
     }
 
     // if current URL contains "weworkremotely"
     else if (url.indexOf("weworkremotely.com") > -1) {
-        const nameWrapper = document.getElementsByClassName('listing-header-container');
-        const jobTitle = nameWrapper[0].querySelector('h1').textContent;
-
-        const companyCard = document.getElementsByClassName('company-card');
-
-        const companyHeader = companyCard[0].querySelector('h2')
-        const companyName = companyHeader.querySelector('a').textContent
-
+        const jobTitle = getText('.listing-header-container h1', document, 'Job Title Not Found');
+        const companyName = getText('.company-card h2 a', document, 'Company Name Not Found');
 
         // Get the reference to the i tag with the class "fas fa-map-marker-alt"
         const icon = document.querySelector('i.fas.fa-map-marker-alt');
 
-        // Check else if the icon exists and retrieve the associated h3 text
+        // Check if the icon exists and retrieve the associated parent text
         let companyLocation = '';
-        if (icon) {
-            const h3Tag = icon.parentElement; // Get the reference to the parent element of the icon
-            companyLocation = h3Tag.textContent.trim();
+        if (icon && icon.parentElement) {
+            companyLocation = icon.parentElement.textContent.trim();
         }
 
-        const jobType = 'Remote'
+        const jobType = 'Remote';
 
-        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType })
+        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType });
     }
 
     // if current URL contains "justjoin.it"
     else if (url.indexOf("justjoin.it") > -1) {
-        const jobTitle = document.getElementsByClassName('css-1id4k1')[0].innerText;
+        const jobTitle = getByClassList('css-1id4k1', 'Job Title Not Found');
+        const companyName = getByClassList('css-l4opor', 'Company Name Not Found');
+        const companyLocation = getByClassList('css-9wmrp4', 'Location Not Found');
 
-        const companyName = document.getElementsByClassName('css-l4opor')[0].innerText;
-
-        const companyLocation = document.getElementsByClassName('css-9wmrp4')[0].textContent;
-
-        let jobType = document.getElementsByClassName('css-1t449q3')[0].innerText;
-
+        let jobType = getByClassList('css-1t449q3', '');
         switch (jobType.toLowerCase()) {
             case "fully remote":
                 jobType = "Remote";
@@ -251,24 +306,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 break;
         }
 
-        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType })
+        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType });
     }
 
     // if current URL contains "octopusit.fr"
     else if (url.indexOf("octopusit.fr") > -1) {
-        const headerContainer = document.getElementsByClassName('font-company-header')[0].innerText;
+        const headerContainer = getText('.font-company-header', document, '');
         const arr = headerContainer.split(" | ");
-        const jobTitle = arr[0];
+        const jobTitle = arr[0] || 'Job Title Not Found';
 
         const companyName = 'Octopus IT';
 
-
-        const h2Content = document.querySelector('h2').textContent;
+        const h2Content = getText('h2', document, '');
         const locationStart = h2Content.indexOf("Lieu : ") + 7;
         const locationEnd = h2Content.indexOf("Tags") - 1;
-        const companyLocation = h2Content.substring(locationStart, locationEnd);
+        const companyLocation = (locationStart > 6 && locationEnd > locationStart) ? h2Content.substring(locationStart, locationEnd) : 'Location Not Found';
 
-        const typeContainer = document.getElementsByClassName('bg-company-primary-text')[0].innerText;
+        const typeContainer = getText('.bg-company-primary-text', document, '');
 
         let jobType;
         if (typeContainer.includes("Complètement à distance")) {
@@ -279,11 +333,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             jobType = "On Site";
         }
 
-        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType })
+        sendResponse({ name: jobTitle, company: companyName, location: companyLocation, type: jobType });
     }
 
     else {
         sendResponse(null);
+    }
+    } catch (err) {
+        // Ensure we always respond to the caller so the popup/background doesn't get `undefined`.
+        console.error('content.js error while scraping page:', err);
+        try {
+            sendResponse({ name: 'Error', company: 'Error', location: 'Error', type: 'On site', _error: err && err.message ? err.message : String(err) });
+        } catch (e) {
+            // ignore
+        }
     }
 
     return true;

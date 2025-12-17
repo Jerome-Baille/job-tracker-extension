@@ -1,5 +1,27 @@
 let ports = [];
 
+// Prefer opening the Side Panel when the user clicks the extension icon.
+// Note: this won't work if the manifest defines action.default_popup.
+chrome.runtime.onInstalled.addListener(() => {
+    if (chrome.sidePanel?.setPanelBehavior) {
+        chrome.sidePanel
+            .setPanelBehavior({ openPanelOnActionClick: true })
+            .catch(() => {
+                // Some Chrome versions / policies may not support this.
+            });
+    }
+});
+
+// Fallback: explicitly open the side panel on click (covers cases where
+// openPanelOnActionClick isn't available).
+chrome.action.onClicked.addListener(tab => {
+    const tabId = tab?.id;
+    if (!tabId || !chrome.sidePanel?.open) return;
+    chrome.sidePanel.open({ tabId }).catch(() => {
+        // Ignore if side panel isn't available.
+    });
+});
+
 // Set up connection listener outside tab change listener
 chrome.runtime.onConnect.addListener(port => {
     if (port.name === "popup") {
