@@ -17,7 +17,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     // if current URL contains "linkedin"
     if (url.indexOf("linkedin.com") > -1) {
-        // Prefer extracting core details from the <main> element
         const mainEl = document.querySelector('main');
 
         let jobTitle = 'Job Title Not Found';
@@ -25,52 +24,103 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         let companyLocation = 'Location Not Found';
         let jobType = 'On site';
 
-        if (mainEl) {
-            const ps = Array.from(mainEl.querySelectorAll('p'));
+        // jobTitle is the content of the h1
+        jobTitle = getText('h1', mainEl || document, jobTitle) || jobTitle;
 
-            // The user requested: jobTitle = content of second p
-            if (ps.length >= 2) {
-                jobTitle = (ps[1].textContent || '').trim() || jobTitle;
+        // companyName is the content of the <a> with href starting with https://www.linkedin.com/company
+        // (avoid anchors whose label is just the company logo aria-label)
+        const trimText = (s) => (s || '').replace(/\s+/g, ' ').trim();
+        const isBadCompanyLabel = (label) => {
+            const t = normalize(label);
+            if (!t) return true;
+            return t === 'logo' || t.startsWith('logo ') || t.startsWith('logo de ') || t.includes('logo of ');
+        };
+
+        const companyAnchors = Array.from((mainEl || document).querySelectorAll('a[href^="https://www.linkedin.com/company"]'));
+        if (companyAnchors.length) {
+            const candidates = companyAnchors
+                .map((a) => {
+                    const aria = trimText(a.getAttribute('aria-label'));
+                    const inner = trimText(a.innerText);
+                    const text = trimText(a.textContent);
+                    const title = trimText(a.getAttribute('title'));
+                    const imgAlt = trimText(a.querySelector('img[alt]')?.getAttribute('alt'));
+
+                    const sources = [
+                        { kind: 'innerText', value: inner },
+                        { kind: 'textContent', value: text },
+                        { kind: 'title', value: title },
+                        { kind: 'imgAlt', value: imgAlt },
+                        { kind: 'ariaLabel', value: aria },
+                    ];
+
+                    const best = sources.find((x) => !isBadCompanyLabel(x.value)) || sources[0];
+                    const label = trimText(best?.value);
+
+                    const score =
+                        (best?.kind === 'innerText' ? 30 : 0) +
+                        (best?.kind === 'textContent' ? 20 : 0) +
+                        (best?.kind === 'title' ? 10 : 0) +
+                        (best?.kind === 'imgAlt' ? 5 : 0) +
+                        (best?.kind === 'ariaLabel' ? 1 : 0) -
+                        (isBadCompanyLabel(label) ? 1000 : 0) +
+                        (label ? label.length : 0);
+
+                    return { href: a.href, label, score };
+                })
+                .filter((c) => c.href);
+
+            const bestByHref = new Map();
+            for (const c of candidates) {
+                const prev = bestByHref.get(c.href);
+                if (!prev || c.score > prev.score) bestByHref.set(c.href, c);
             }
 
-            // companyName = content of first p
-            if (ps.length >= 1) {
-                companyName = (ps[0].textContent || '').trim() || companyName;
-            }
+            const best = Array.from(bestByHref.values()).sort((a, b) => b.score - a.score)[0];
+            if (best && best.label && !isBadCompanyLabel(best.label)) companyName = best.label;
+        }
 
-            // companyLocation = first span inside third p
-            if (ps.length >= 3) {
-                const span = ps[2].querySelector('span');
-                if (span) companyLocation = (span.textContent || '').trim() || companyLocation;
+        // companyLocation extraction path:
+        // div.job-details-jobs-unified-top-card__primary-description-container
+        //   -> first div
+        //     -> first span
+        //       -> first span within that span
+        const locationContainer = (mainEl || document).querySelector('div.job-details-jobs-unified-top-card__primary-description-container');
+        if (locationContainer) {
+            const firstDiv = locationContainer.querySelector('div');
+            if (firstDiv) {
+                const firstSpan = firstDiv.querySelector('span');
+                if (firstSpan) {
+                    const innerSpan = firstSpan.querySelector('span');
+                    const locationText = ((innerSpan || firstSpan).textContent || '').trim();
+                    if (locationText) companyLocation = locationText;
+                }
             }
+        }
 
-            // For jobType, find the first DIV inside <main> that contains buttons
-            // and check the text of each button for remote/hybrid keywords.
-            const divs = Array.from(mainEl.querySelectorAll('div'));
-            let buttonContainer = null;
-            for (const d of divs) {
-                if (d.querySelector && d.querySelector('button')) {
-                    buttonContainer = d;
+        // jobType: check the text of each button in div.job-details-fit-level-preferences
+        const fitPrefs = (mainEl || document).querySelector('div.job-details-fit-level-preferences');
+        if (fitPrefs) {
+            const btns = Array.from(fitPrefs.querySelectorAll('button'));
+            let sawHybrid = false;
+            for (const b of btns) {
+                const text = normalize(b.textContent || '');
+                if (!text) continue;
+                if (
+                    text.includes('remote') ||
+                    text.includes('a distance') ||
+                    text.includes('teletravail') ||
+                    text.includes('work from home')
+                ) {
+                    jobType = 'Remote';
+                    sawHybrid = false;
                     break;
                 }
-            }
-
-            if (buttonContainer) {
-                const btns = Array.from(buttonContainer.querySelectorAll('button'));
-                // Prioritise remote, then hybrid. If none matched, keep On site.
-                for (const b of btns) {
-                    const text = normalize(b.textContent || '');
-                    if (!text) continue;
-                    if (text.includes('a distance') || text.includes('teletravail') || text.includes('remote')) {
-                        jobType = 'Remote';
-                        break;
-                    }
-                    if (text.includes('hybride') || text.includes('hybrid')) {
-                        jobType = 'Hybrid';
-                        // don't break immediately; prioritize remote over hybrid if found in another button
-                    }
+                if (text.includes('hybrid') || text.includes('hybride')) {
+                    sawHybrid = true;
                 }
             }
+            if (jobType !== 'Remote' && sawHybrid) jobType = 'Hybrid';
         }
 
         sendResponse({ name: jobTitle, company: companyName, location: companyLocation || 'Location Not Found', type: jobType });
