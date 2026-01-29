@@ -24,82 +24,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         let companyLocation = 'Location Not Found';
         let jobType = 'On site';
 
-        // jobTitle is the content of the h1
-        jobTitle = getText('h1', mainEl || document, jobTitle) || jobTitle;
+        // jobTitle is the content of the div with class "f5823fe9 _672f5363 ca3d9c80 _87c28aea c34544bf _3e5512f1 _14c8962d ba64e61e a2217112"
+        jobTitle = getText('.f5823fe9._672f5363.ca3d9c80._87c28aea.c34544bf._3e5512f1._14c8962d.ba64e61e.a2217112', mainEl || document, jobTitle) || jobTitle;
 
-        // companyName is the content of the <a> with href starting with https://www.linkedin.com/company
-        // (avoid anchors whose label is just the company logo aria-label)
-        const trimText = (s) => (s || '').replace(/\s+/g, ' ').trim();
-        const isBadCompanyLabel = (label) => {
-            const t = normalize(label);
-            if (!t) return true;
-            return t === 'logo' || t.startsWith('logo ') || t.startsWith('logo de ') || t.includes('logo of ');
-        };
+        // company is the content of the a tag with class "ba64e61e cfcfed24 _1ef4c821 _3c388725"
+        companyName = getText('a.ba64e61e.cfcfed24._1ef4c821._3c388725', mainEl || document, companyName) || companyName;
 
-        const companyAnchors = Array.from((mainEl || document).querySelectorAll('a[href^="https://www.linkedin.com/company"]'));
-        if (companyAnchors.length) {
-            const candidates = companyAnchors
-                .map((a) => {
-                    const aria = trimText(a.getAttribute('aria-label'));
-                    const inner = trimText(a.innerText);
-                    const text = trimText(a.textContent);
-                    const title = trimText(a.getAttribute('title'));
-                    const imgAlt = trimText(a.querySelector('img[alt]')?.getAttribute('alt'));
-
-                    const sources = [
-                        { kind: 'innerText', value: inner },
-                        { kind: 'textContent', value: text },
-                        { kind: 'title', value: title },
-                        { kind: 'imgAlt', value: imgAlt },
-                        { kind: 'ariaLabel', value: aria },
-                    ];
-
-                    const best = sources.find((x) => !isBadCompanyLabel(x.value)) || sources[0];
-                    const label = trimText(best?.value);
-
-                    const score =
-                        (best?.kind === 'innerText' ? 30 : 0) +
-                        (best?.kind === 'textContent' ? 20 : 0) +
-                        (best?.kind === 'title' ? 10 : 0) +
-                        (best?.kind === 'imgAlt' ? 5 : 0) +
-                        (best?.kind === 'ariaLabel' ? 1 : 0) -
-                        (isBadCompanyLabel(label) ? 1000 : 0) +
-                        (label ? label.length : 0);
-
-                    return { href: a.href, label, score };
-                })
-                .filter((c) => c.href);
-
-            const bestByHref = new Map();
-            for (const c of candidates) {
-                const prev = bestByHref.get(c.href);
-                if (!prev || c.score > prev.score) bestByHref.set(c.href, c);
-            }
-
-            const best = Array.from(bestByHref.values()).sort((a, b) => b.score - a.score)[0];
-            if (best && best.label && !isBadCompanyLabel(best.label)) companyName = best.label;
-        }
-
-        // companyLocation extraction path:
-        // div.job-details-jobs-unified-top-card__primary-description-container
-        //   -> first div
-        //     -> first span
-        //       -> first span within that span
-        const locationContainer = (mainEl || document).querySelector('div.job-details-jobs-unified-top-card__primary-description-container');
-        if (locationContainer) {
-            const firstDiv = locationContainer.querySelector('div');
-            if (firstDiv) {
-                const firstSpan = firstDiv.querySelector('span');
-                if (firstSpan) {
-                    const innerSpan = firstSpan.querySelector('span');
-                    const locationText = ((innerSpan || firstSpan).textContent || '').trim();
-                    if (locationText) companyLocation = locationText;
-                }
+        // companyLocation: find the p with class "f5823fe9 _7e00cc80 ca3d9c80 _87c28aea b154eb37 _3e5512f1 _14c8962d _822563a7 a2217112" and get first span
+        const locationP = (mainEl || document).querySelector('p.f5823fe9._7e00cc80.ca3d9c80._87c28aea.b154eb37._3e5512f1._14c8962d._822563a7.a2217112');
+        if (locationP) {
+            const firstSpan = locationP.querySelector('span');
+            if (firstSpan) {
+                const locText = (firstSpan.textContent || '').trim();
+                if (locText) companyLocation = locText;
             }
         }
 
-        // jobType: check the text of each button in div.job-details-fit-level-preferences
-        const fitPrefs = (mainEl || document).querySelector('div.job-details-fit-level-preferences');
+        // jobType: find the first div with class "d43d0ae6 _6aa42965 _55273a0f _822041e1 _033aed70 _6c0f1c43" and do the same text search as before
+        const fitPrefs = (mainEl || document).querySelector('div.d43d0ae6._6aa42965._55273a0f._822041e1._033aed70._6c0f1c43');
         if (fitPrefs) {
             const btns = Array.from(fitPrefs.querySelectorAll('button'));
             let sawHybrid = false;
