@@ -1,7 +1,7 @@
 {
     "name": "Job Application Tracker",
     "description": "Track job applications",
-    "version": "2.6",
+    "version": "2.7",
     "manifest_version": 3,
     "permissions": [
         "storage",
@@ -34,9 +34,23 @@
                 "https://www.welcometothejungle.com/*",
                 "https://www.apec.fr/*",
                 "https://djinni.co/*",
+                "https://weworkremotely.com/*",
+                "https://justjoin.it/*",
                 "https://jobs.octopusit.fr/*" 
             ],
-            "js": ["content.js"]
+            "js": [
+                "parsers/utils.js",
+                "parsers/linkedin.js",
+                "parsers/indeed.js",
+                "parsers/hellowork.js",
+                "parsers/welcometothejungle.js",
+                "parsers/apec.js",
+                "parsers/djinni.js",
+                "parsers/weworkremotely.js",
+                "parsers/justjoin.js",
+                "parsers/octopus.js",
+                "content.js"
+            ]
         }
     ],
     "content_security_policy": {
@@ -50,6 +64,8 @@
         "https://www.welcometothejungle.com/*",
         "https://www.apec.fr/*",
         "https://djinni.co/*",
+        "https://weworkremotely.com/*",
+        "https://justjoin.it/*",
         "https://jobs.octopusit.fr/*",
         "https://job-tracker.jerome-baille.fr/*"
     ]

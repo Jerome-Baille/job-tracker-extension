@@ -36,7 +36,17 @@ chrome.runtime.onConnect.addListener(port => {
 
 chrome.tabs.onActivated.addListener(activeInfo => {
     chrome.tabs.get(activeInfo.tabId, tab => {
-        const supportedWebsites = ["linkedin.com", "indeed.com", "hellowork", "welcometothejungle.com", "apec.fr", "djinni.co", "weworkremotely.com"];
+        const supportedWebsites = [
+            "linkedin.com",
+            "indeed.com",
+            "hellowork",
+            "welcometothejungle.com",
+            "apec.fr",
+            "djinni.co",
+            "weworkremotely.com",
+            "justjoin.it",
+            "octopusit.fr"
+        ];
         const isSupported = supportedWebsites.some(site => tab.url.includes(site));
 
         // Send message to all connected ports

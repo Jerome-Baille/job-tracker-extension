@@ -16,10 +16,23 @@ const queryTabs = (): Promise<{tabs: chrome.tabs.Tab[], url: string}> => {
 
 const executeScript = (tabId: number): Promise<void> => {
     return new Promise((resolve, reject) => {
+        // Inject all parser files in order, then content.js dispatcher
         chrome.scripting.executeScript(
             {
                 target: { tabId },
-                files: ['content.js'],
+                files: [
+                    'parsers/utils.js',
+                    'parsers/linkedin.js',
+                    'parsers/indeed.js',
+                    'parsers/hellowork.js',
+                    'parsers/welcometothejungle.js',
+                    'parsers/apec.js',
+                    'parsers/djinni.js',
+                    'parsers/weworkremotely.js',
+                    'parsers/justjoin.js',
+                    'parsers/octopus.js',
+                    'content.js'
+                ],
             },
             () => {
                 if (chrome.runtime.lastError) {
