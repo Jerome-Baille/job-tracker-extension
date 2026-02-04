@@ -20,21 +20,21 @@
 
         // jobTitle is the content of the p with specified classes
         jobTitle = getText(
-            'p._3a77e68c._4dceb28c._66c0300d.b07652e5._1816733c._00f2bb2c._51aa4f39._77bf8873._150cba7a',
+            'p.d0cf87d0._6dd48011._6a30f646._73ef6a21._50dadaaf._69332e10.b67a252c._022e7d57._03f4bbb8',
             mainEl || document,
             jobTitle
         ) || jobTitle;
 
         // company is the content of the a tag with specified classes
         companyName = getText(
-            'a._77bf8873._9df4e0d3._9566f9ea.ab7d4f05',
+            'a._022e7d57._4e7eff25.bb8dd018._742d1a1f',
             mainEl || document,
             companyName
         ) || companyName;
 
         // companyLocation: find the p with specified classes and get first span
         const locationP = (mainEl || document).querySelector(
-            'p._3a77e68c._761606f8._66c0300d.b07652e5.a2778aeb._00f2bb2c._51aa4f39._5d0b0d2f._150cba7a'
+            'p.d0cf87d0._67499df2._6a30f646._73ef6a21._3ba287d8._69332e10.b67a252c.ec71ea5c._03f4bbb8'
         );
         if (locationP) {
             const firstSpan = locationP.querySelector('span');
@@ -46,7 +46,7 @@
 
         // jobType: check the div with specified classes for remote/hybrid keywords
         const fitPrefs = (mainEl || document).querySelector(
-            'div._6d9316ce.c573e5cb._5798babd._9952eb5c._6244c491.b00ee6b2'
+            'div._1a4b8909.dfb4d365._8e79ff8f._695f2473._3bd183c6._2c8829c7'
         );
         if (fitPrefs) {
             const btns = Array.from(fitPrefs.querySelectorAll('button'));
