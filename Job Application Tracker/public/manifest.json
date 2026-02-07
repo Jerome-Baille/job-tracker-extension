@@ -36,7 +36,8 @@
                 "https://djinni.co/*",
                 "https://weworkremotely.com/*",
                 "https://justjoin.it/*",
-                "https://jobs.octopusit.fr/*" 
+                "https://jobs.octopusit.fr/*",
+                "https://candidat.francetravail.fr/*"
             ],
             "js": [
                 "parsers/utils.js",
@@ -49,6 +50,7 @@
                 "parsers/weworkremotely.js",
                 "parsers/justjoin.js",
                 "parsers/octopus.js",
+                "parsers/francetravail.js",
                 "content.js"
             ]
         }
@@ -67,6 +69,7 @@
         "https://weworkremotely.com/*",
         "https://justjoin.it/*",
         "https://jobs.octopusit.fr/*",
+        "https://candidat.francetravail.fr/*",
         "https://job-tracker.jerome-baille.fr/*"
     ]
 }

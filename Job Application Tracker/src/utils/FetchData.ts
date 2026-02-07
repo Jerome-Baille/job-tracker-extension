@@ -31,6 +31,7 @@ const executeScript = (tabId: number): Promise<void> => {
                     'parsers/weworkremotely.js',
                     'parsers/justjoin.js',
                     'parsers/octopus.js',
+                    'parsers/francetravail.js',
                     'content.js'
                 ],
             },
