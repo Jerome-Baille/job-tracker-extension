@@ -33,11 +33,11 @@
             if (nonEmptySpan) companyLocation = (nonEmptySpan.textContent || '').trim();
         }
 
-        // jobType: search keywords inside the content of all buttons on the page
-        const btns = Array.from((mainEl || document).querySelectorAll('button'));
+        // jobType: search keywords inside the content of all buttons and links on the page
+        const elems = Array.from((mainEl || document).querySelectorAll('button, a'));
         let sawHybrid = false;
-        for (const b of btns) {
-            const text = normalize(b.textContent || '');
+        for (const el of elems) {
+            const text = normalize(el.textContent || '');
             if (!text) continue;
             if (
                 text.includes('remote') ||
