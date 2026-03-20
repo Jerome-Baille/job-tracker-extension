@@ -39,6 +39,10 @@ export const DataTable = ({ data, setData }: TableProps) => {
                 <td contentEditable onBlur={(event) => handleBlur(event, 'type')}>{data.type}</td>
             </tr>
             <tr>
+                <th>Tag</th>
+                <td contentEditable onBlur={(event) => handleBlur(event, 'tag')}>{data.tag}</td>
+            </tr>
+            <tr>
                 <th>Date</th>
                 <td contentEditable onBlur={(event) => handleBlur(event, 'applicationDate')}>{data.applicationDate ? formatDateForDisplay(data.applicationDate) : null}</td>
             </tr>

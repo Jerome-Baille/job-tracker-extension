@@ -16,6 +16,7 @@ function DataManager() {
         link: '',
         applicationDate: '',
         applicationYear: 0,
+        tag: '',
     });
 
     const isEmpty = Object.values(data).every(val => val === '' || val === 0);

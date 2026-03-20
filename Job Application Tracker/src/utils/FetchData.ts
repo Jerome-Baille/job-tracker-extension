@@ -58,7 +58,7 @@ const sendMessage = (tabId: number): Promise<{name: string, company: string, loc
     });
 };
 
-export const fetchData = async (): Promise<{name: string, company: string, location: string, type: string, link: string, applicationDate: string, applicationYear: number}> => {
+export const fetchData = async (): Promise<{name: string, company: string, location: string, type: string, link: string, applicationDate: string, applicationYear: number, tag: string}> => {
     try {
         const {tabs, url} = await queryTabs();
         if (tabs.length === 0 || tabs[0].id === undefined) {
@@ -70,7 +70,7 @@ export const fetchData = async (): Promise<{name: string, company: string, locat
         const data = await sendMessage(tabId);
         const { applicationDate, applicationYear } = formatDate();
         if (data && data.name && data.company && data.location && data.type) {
-            return {...data, link: url, applicationDate, applicationYear};
+            return {...data, link: url, applicationDate, applicationYear, tag: 'dev'};
         } else {
             throw new Error('Required properties not found in response');
         }

@@ -6,6 +6,7 @@ export interface JobData {
     link: string;
     applicationDate: string;
     applicationYear: number;
+    tag: string;
 }
 
 export interface JobDataProps {

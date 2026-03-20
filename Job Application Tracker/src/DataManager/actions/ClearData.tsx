@@ -13,6 +13,7 @@ export const ClearData = ({ setData }: JobDataProps) => {
                 link: '',
                 applicationDate: '',
                 applicationYear: 0,
+                tag: '',
             });
         } catch (error) {
             showToast({
