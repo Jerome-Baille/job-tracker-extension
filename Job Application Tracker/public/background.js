@@ -46,7 +46,8 @@ chrome.tabs.onActivated.addListener(activeInfo => {
             "weworkremotely.com",
             "justjoin.it",
             "octopusit.fr",
-            "francetravail.fr"
+            "francetravail.fr",
+            "meteojob.com"
         ];
         const isSupported = supportedWebsites.some(site => tab.url.includes(site));
 

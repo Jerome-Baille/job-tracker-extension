@@ -1,7 +1,7 @@
 {
     "name": "Job Application Tracker",
     "description": "Track job applications",
-    "version": "2.7",
+    "version": "2.8",
     "manifest_version": 3,
     "permissions": [
         "storage",
@@ -37,7 +37,8 @@
                 "https://weworkremotely.com/*",
                 "https://justjoin.it/*",
                 "https://jobs.octopusit.fr/*",
-                "https://candidat.francetravail.fr/*"
+                "https://candidat.francetravail.fr/*",
+                "https://www.meteojob.com/*"
             ],
             "js": [
                 "parsers/utils.js",
@@ -51,6 +52,7 @@
                 "parsers/justjoin.js",
                 "parsers/octopus.js",
                 "parsers/francetravail.js",
+                "parsers/meteojob.js",
                 "content.js"
             ]
         }
@@ -70,6 +72,7 @@
         "https://justjoin.it/*",
         "https://jobs.octopusit.fr/*",
         "https://candidat.francetravail.fr/*",
+        "https://www.meteojob.com/*",
         "https://job-tracker.jerome-baille.fr/*"
     ]
 }

@@ -32,6 +32,7 @@ const executeScript = (tabId: number): Promise<void> => {
                     'parsers/justjoin.js',
                     'parsers/octopus.js',
                     'parsers/francetravail.js',
+                    'parsers/meteojob.js',
                     'content.js'
                 ],
             },
