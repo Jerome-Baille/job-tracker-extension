@@ -11,39 +11,41 @@
      * @returns {{ name: string, company: string, location: string, type: string }}
      */
     function parse() {
+        const metadataBlock = document.querySelector('div[data-testid="job-metadata-block"]');
+
         const companyName = getText(
-            'div[data-testid="job-metadata-block"] a span',
-            document,
+            'a span',
+            metadataBlock,
             'Company Name Not Found'
         );
         const jobTitle = getText(
-            'div[data-testid="job-metadata-block"] h2',
-            document,
+            'h2',
+            metadataBlock,
             'Job Title Not Found'
         );
-        const companyLocation = getText('i[name="location"] + *', document, '');
+        const locationContainer = metadataBlock ? metadataBlock.querySelector('div:has(svg[alt="Location"])') : null;
+        const locationSpan = locationContainer ? locationContainer.querySelector('span > span') : null;
+        const companyLocation = locationSpan ? locationSpan.textContent.trim() : '';
 
         let jobType = '';
 
-        const remoteIcon = document.querySelector('i[name="remote"]');
-        if (remoteIcon) {
-            const parentDiv = remoteIcon.closest('div');
-            const spanElement = parentDiv ? parentDiv.querySelector('span') : null;
-            const spanContent = spanElement ? spanElement.textContent : '';
+        const remoteContainer = metadataBlock ? metadataBlock.querySelector('div:has(svg[alt="Remote"])') : null;
+        const remoteSpan = remoteContainer ? remoteContainer.querySelector('span:not([class])') : null;
+        const remoteText = remoteSpan ? remoteSpan.textContent.trim() : '';
+        const normalizedRemoteText = remoteText.toLowerCase().normalize('NFC');
 
-            if (spanContent.indexOf('total') > -1) {
-                jobType = 'Remote';
-            } else if (
-                spanContent.indexOf('partiel') > -1 ||
-                spanContent.indexOf('ponctuel') > -1 ||
-                spanContent.indexOf('occasionnel') > -1 ||
-                spanContent.indexOf('régulier') > -1 ||
-                spanContent.indexOf('fréquent') > -1
-            ) {
-                jobType = 'Hybrid';
-            } else {
-                jobType = 'On site';
-            }
+        if (normalizedRemoteText.includes('total')) {
+            jobType = 'Remote';
+        } else if (
+            normalizedRemoteText.includes('partiel') ||
+            normalizedRemoteText.includes('ponctuel') ||
+            normalizedRemoteText.includes('occasionnel') ||
+            normalizedRemoteText.includes('régulier') ||
+            normalizedRemoteText.includes('fréquent')
+        ) {
+            jobType = 'Hybrid';
+        } else if (remoteText) {
+            jobType = 'On site';
         }
 
         return {
